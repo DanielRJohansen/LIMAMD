@@ -1,2 +1,2 @@
-# LIMAMD
-The Public Lima Molecular Dynamics repo
+# LIMA
+The public LIMA Molecular Dynamics repo
