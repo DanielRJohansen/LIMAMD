@@ -18,8 +18,8 @@ rm -rf "$program_dir"/
 
 
 echo "Installing dependencies"
-mkdir -p "$source_dir"/dependencies
-cp -r ./dependencies/* "$source_dir"/dependencies/
+#mkdir -p "$source_dir"/dependencies
+#cp -r ./dependencies/* "$source_dir"/dependencies/
 
 
 
@@ -62,10 +62,13 @@ fi
 
 
 # Prepare the source code
-mkdir "$source_dir"/build
+mkdir "$program_dir"
+mkdir -p "$source_dir"/build
 cp -r "$install_dir"/code/* "$source_dir"
 
-
+#mkdir "$program_dir"/resources
+cp -r "$install_dir"/resources "$program_dir/."
+sudo chmod 777 "$program_dir"/resources
 
 # Build the public "lima" executable
 cd "$source_dir"/build

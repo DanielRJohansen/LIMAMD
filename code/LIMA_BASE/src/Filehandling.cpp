@@ -100,7 +100,7 @@ vector<vector<string>> Filehandler::readFile(const string path, vector<char> com
 map<string, double> Filehandler::parseINIFile(const string path) {
 	// TODO: add read here
 	//if (verbosity_level >= V1) { cout << "Reading particles from file " << path << "\n"; }
-	std::fstream file;
+	std::ifstream file;
 	file.open(path);
 
 	map<string, double> dict;
@@ -140,8 +140,11 @@ void replaceTabs(std::string& str) {
 
 SimpleParsedFile parseBasicFile(const std::string& path, bool verbose, SetSectionFunction setSection, vector<char> ignores = {';', '#'}, char delimiter = ' ')
 {
-	std::fstream file;
+	std::ifstream file;
 	file.open(path);
+	if (!file.is_open() || file.fail()) {
+        throw std::runtime_error(std::format("Failed to open file \"{}\"\n", path).c_str());
+    }
 
 	SimpleParsedFile parsedfile;
 
@@ -274,7 +277,7 @@ SimpleParsedFile Filehandler::parseGroFile(const std::string& path, bool verbose
 {
 	assert(path.substr(path.length() - 4) == ".gro");
 
-	std::fstream file;
+	std::ifstream file;
 	file.open(path);
 	 if (!file.is_open() || file.fail()) {
         throw std::runtime_error(std::format("Failed to open file {}", path).c_str());
