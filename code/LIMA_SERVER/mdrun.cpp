@@ -2,22 +2,9 @@
 #include <format>
 #include <filesystem>
 
+#include <CommandlineUtils.h>
+
 #include "Environment.h"
-
-
-char* getCmdOption(char** begin, char** end, const std::string& option)
-{
-	char** itr = std::find(begin, end, option);
-	if (itr != end && std::next(itr) != end) {
-		return *std::next(itr);
-	}
-	return nullptr;
-}
-
-bool cmdOptionExists(char** begin, char** end, const std::string& option)
-{
-	return std::find(begin, end, option) != end;
-}
 
 
 struct MdrunSetup {
@@ -85,18 +72,18 @@ int main(int argc, char** argv)
 	try {
 		MdrunSetup setup = parseProgramArguments(argc, argv);
 		std::cout << "LIMA is preparing simulation in dir " << setup.work_dir << "\n";
-		auto env = std::make_unique<Environment>(setup.work_dir, setup.envmode);
-		const InputSimParams ip = env->loadInputSimParams(setup.simpar);
+		auto env = std::make_unique<Environment>(setup.work_dir, setup.envmode, true);
+		const SimParams ip = env->loadSimParams(setup.simpar);
 		//std::cout << setup.structure << "\t" << setup.topol << "\n";
 		env->CreateSimulation(setup.structure, setup.topol, ip);
 		env->run();
 	}
 	catch (const std::runtime_error& ex) {
-		std::cerr << "LIMA encountered an exception:\n\t " << ex.what();
+		std::cerr << "LIMA encountered an exception:\n\t " << ex.what() << std::endl;
 		return 1;
 	}
 	catch (...) {
-		std::cerr << "LIMA caught an unknown exception";
+		std::cerr << "LIMA caught an unknown exception\n";
 		return 1;
 	}
 

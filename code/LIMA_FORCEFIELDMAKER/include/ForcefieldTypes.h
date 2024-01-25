@@ -108,7 +108,8 @@ namespace FTHelpers {
 
 
 	template <typename GenericBondType>
-	static const GenericBondType findBestMatchInForcefield(const GenericBondType& query_type, const std::vector<GenericBondType>& forcefield, bool first_attempt =true) {
+	static const GenericBondType findBestMatchInForcefield(const GenericBondType& query_type, const std::vector<GenericBondType>& forcefield, 
+		bool first_attempt =true) {
 		if (forcefield.size() == 0) { throw std::runtime_error("No angletypes in forcefield!"); }
 
 		//query_type.sort();
@@ -224,12 +225,14 @@ struct NB_Atomtype {
 
 // This is for bonded atoms!!!!!!!!!!!
 struct Atom {
-	Atom(int global_id, int gro_id, int chain_id, int res_id, const std::string& atomtype, const std::string& atomname) : global_id(global_id), gro_id(gro_id), chain_id(chain_id), res_id(res_id), atomname(atomname), atomtype(atomtype) {}
+	Atom(int global_id, int gro_id, int chain_id, int res_id, const std::string& atomtype, const std::string& atomname, int unique_resid) 
+		: global_id(global_id), gro_id(gro_id), chain_id(chain_id), res_id(res_id), atomname(atomname), atomtype(atomtype), unique_res_id(unique_resid) {}
 	Atom(const Atom& atom) = default;
 	int global_id;
 	int gro_id;										// Come from topol.top file
 	int chain_id;
-	int res_id;					// Unique in chain, NOT 0-indexed, not guaranteed sequential
+	int res_id;					// 0 fucking guarantees
+	int unique_res_id;			// Given by lima, unique
 	std::string atomtype;	
 	std::string atomname;	// I dunno what this is for
 	int atomtype_id;				// Asigned later
@@ -259,10 +262,10 @@ public:
 		return atoms[global_id];
 	}
 
-	void insert(int chain_id, int atom_gro_id, const std::string& atomtype, const std::string& atomname, int res_id) {
+	void insert(int chain_id, int atom_gro_id, const std::string& atomtype, const std::string& atomname, int res_id, int unique_resid) {
 		const int global_id = atoms.size();
 		map[chain_id][atom_gro_id] = global_id;
-		atoms.push_back(Atom{ global_id , atom_gro_id, chain_id, res_id, atomtype, atomname });
+		atoms.push_back(Atom{ global_id , atom_gro_id, chain_id, res_id, atomtype, atomname, unique_resid });
 	}
 	bool exists(int chain_id, int atom_gro_id) const {
 		auto chain_it = map.find(chain_id);
@@ -278,7 +281,7 @@ public:
 
 
 // Returns whether string a is smaller than string b
-bool isStringSmaller(const std::string& a, const std::string& b) 
+static bool isStringSmaller(const std::string& a, const std::string& b) 
 {
 	for (int i = 0; i < std::min(a.length(), b.length()); i++) {
 		if (a[i] > b[i])

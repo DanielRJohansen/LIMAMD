@@ -7,22 +7,29 @@
 #include "Constants.h"
 #include "LimaTypes.cuh"
 #include "Simulation.cuh"
+//#include "SimulationDevice.cuh"
 #include "Forcefield.cuh"
 #include "Utilities.h"
 
-#include "Neighborlists.cuh"
 
 
 
 
 #include <memory>
-#include <vector>
-//#include <algorithm>
 
-__global__ void compoundKernel(SimulationDevice* sim);
+class SimulationDevice;
+
+const int cbkernel_utilitybuffer_size = sizeof(DihedralBond) * MAX_DIHEDRALBONDS_IN_COMPOUND;
+template <typename BoundaryCondition>
+__global__ void compoundBondsAndIntegrationKernel(SimulationDevice* sim);
+constexpr int clj_utilitybuffer_bytes = sizeof(CompoundCoords);
+template <typename BoundaryCondition>
+__global__ void compoundLJKernel(SimulationDevice* sim);
+template <typename BoundaryCondition>
 __global__ void solventForceKernel(SimulationDevice* sim);
-
+template <typename BoundaryCondition>
 __global__ void compoundBridgeKernel(SimulationDevice* sim);
+template <typename BoundaryCondition>
 __global__ void solventTransferKernel(SimulationDevice* sim);
 
 struct EngineTimings {
@@ -50,13 +57,14 @@ struct RunStatus {
 	bool critical_error_occured = false;
 };
 
+
 class Engine {
 public:
-	Engine(std::unique_ptr<Simulation>, ForceField_NB, std::unique_ptr<LimaLogger>);
+	Engine(std::unique_ptr<Simulation>, BoundaryConditionSelect, std::unique_ptr<LimaLogger>);
 	~Engine();
 
 	// Todo: Make env run in another thread, so engine has it's own thread entirely
-	// I'm sure that will help the branch predictor alot!
+	// I'm sure that will help the branch predictor alot! Actually, probably no.
 	void step();
 
 	/// <summary>
@@ -65,15 +73,15 @@ public:
 	void runAsync(std::unique_ptr<Simulation>, RunStatus& runstatus);
 
 
-	std::unique_ptr<Simulation> takeBackSim() { return std::move(simulation); }
+	std::unique_ptr<Simulation> takeBackSim();
 
 
 	EngineTimings timings{};
-	RunStatus runstatus;
+	volatile RunStatus runstatus;
 
-	ForceField_NB getForcefield() { return forcefield_host; }
 	void terminateSimulation();
 
+	SimulationDevice* getSimDev() { return sim_dev; }
 
 private:
 
@@ -82,9 +90,8 @@ private:
 	void deviceMaster();
 
 	// -------------------------------------- CPU LOAD -------------------------------------- //
-	std::unique_ptr<NListManager> nlist_manager;
 	void setDeviceConstantMemory();
-
+	void verifyEngine();
 
 	// streams every n steps
 	void offloadLoggingData(const int steps_to_transfer = STEPS_PER_LOGTRANSFER);
@@ -106,9 +113,13 @@ private:
 
 	int testval = 0;
 
-	ForceField_NB forcefield_host;
+	//ForceField_NB forcefield_host;
 	uint64_t step_at_last_traj_transfer = 0;
-	std::unique_ptr<Simulation> simulation;
+	std::unique_ptr<Simulation> simulation = nullptr;
+
+	SimulationDevice* sim_dev = nullptr;
+
+	const BoundaryConditionSelect bc_select;
 };
 
 

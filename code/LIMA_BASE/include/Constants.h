@@ -6,14 +6,19 @@
 
 #include "UserConstants.h"
 
-#define LIMASAFEMODE
+// LIMASAFEMODE slightly alters the outcome of sims. Even overwrite enabling it in impropers, for a
+// sim with no impropers has this effect. It is very wierd, and i fear i have some undefined behavior
+// somewhere in the code
+//#define LIMASAFEMODE
 //#define LIMAPUSH
 #if defined LIMAPUSH && defined LIMASAFEMODE
 #error These are mutually exclusive
 #endif
 
 
-#define LIMAKERNELDEBUGMODE
+//#define GENERATETRAINDATA
+
+//#define LIMAKERNELDEBUGMODE
 //#define DONTGENDATA
 
 constexpr float PI = 3.14159f;
@@ -57,7 +62,6 @@ constexpr double AVOGADROSNUMBER = 6.02214076e23;
 
 
 // ------------------------------------------------ Box Parameters ---------------------------------------------- //
-//constexpr int _BOX_LEN_PM = 18000;
 constexpr float BOX_LEN_NM = static_cast<float>(_BOX_LEN_PM) / 1000.f;
 
 const int64_t BOX_LEN_i = static_cast<std::int64_t>(_BOX_LEN_PM) * PICO_TO_LIMA;
@@ -91,7 +95,6 @@ const bool POSTSIM_ANAL = true;
 #define ENABLE_SOLVENTS				// Enables Explicit Solvents
 const size_t MAX_SOLVENTS = INT32_MAX-1;	// limited by boxparams
 
-const int MAX_SOLVENTS_IN_BLOCK = 256;
 const int STEPS_PER_SOLVENTBLOCKTRANSFER = 5;	// If we go below 2, we might see issue in solventtransfers
 const int SOLVENTBLOCK_TRANSFERSTEP = STEPS_PER_SOLVENTBLOCKTRANSFER - 1;
 // -------------------------------------------------------------------------------------------------------------- //
@@ -107,17 +110,20 @@ const bool CALC_POTE = true;
 const bool IGNORE_HYDROGEN = false;
 const int GRIDNODE_QUERY_RANGE = 2;
 
+// If we go larger, a single compound can stretch over 2 nm!
+//constexpr int MAX_COMPOUND_PARTICLES = IGNORE_HYDROGEN ? 48 : 64;
+constexpr int MAX_COMPOUND_PARTICLES = 64;
+const int MAX_COMPOUNDS = 4096;			// Arbitrary i think. true max int16_t max - 1. Can also cause trouble when the bondedparticlesLUT static array becomes very large bytewise..
 
-const int MAX_COMPOUND_PARTICLES = 48;	// If we go larger, a single compound can stretch over 2 nm!
-const int MAX_COMPOUNDS = 2048;			// Arbitrary i think. true max int16_t max - 1. Can also cause trouble when the bondedparticlesLUT static array becomes very large bytewise..
+const int NEIGHBORLIST_MAX_COMPOUNDS = 128+64+128;	// TODO: We need to work on getting this number down!
+//const int NEIGHBORLIST_MAX_SOLVENTS = 6144;
 
-const int NEIGHBORLIST_MAX_COMPOUNDS = 256;
-const int NEIGHBORLIST_MAX_SOLVENTS = 6144;
+const bool USE_ATOMICS_FOR_BONDS_RESULTS = false;
 
 
 // Related to compound bridges
 const int MAX_COMPOUNDBRIDGES = MAX_COMPOUNDS;	// Wtf is this param?
-const int MAX_PARTICLES_IN_BRIDGE = 32;
+const int MAX_PARTICLES_IN_BRIDGE = 32;	// Limited to 255 by getBridgelocalIdOfParticle, since id 255 is invalid
 const int MAX_SINGLEBONDS_IN_BRIDGE = 4;
 const int MAX_ANGLEBONDS_IN_BRIDGE = 16;
 const int MAX_DIHEDRALBONDS_IN_BRIDGE = 32;
@@ -129,7 +135,7 @@ const int MAX_SAFE_SHIFT = 6;	// Maxmimum manhattan dist that it is safe to shif
 // Related to forcefield / constant memory
 const int MAX_ATOM_TYPES = 48;
 
-constexpr float MAX_COMPOUND_RADIUS = 1.9f;	// was 1.5
+constexpr float MAX_COMPOUND_RADIUS = 1.5f;	// was 1.5
 // -------------------------------------------------------------------------------------------------------------- //
 
 
@@ -160,12 +166,12 @@ constexpr float MAX_THERMOSTAT_SCALER = 0.001f / static_cast<float>(STEPS_PER_TH
 #error It is not allowed to use display on linux as of right now
 #endif
 
-const int STEPS_PER_RENDER = 50;
+const int STEPS_PER_RENDER = 100;
 constexpr float FORCED_INTERRENDER_TIME = 0.f;		// [ms] Set to 0 for full speed sim
 // -------------------------------------------------------------------------------------------------------------- //
 
 // -------------------------------------------- Neighborlist Parameters ----------------------------------------- //
-const int STEPS_PER_NLIST_UPDATE = 10;
+const int STEPS_PER_NLIST_UPDATE = 5;
 const bool ALLOW_ASYNC_NLISTUPDATE = true;
 // -------------------------------------------------------------------------------------------------------------- //
 

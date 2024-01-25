@@ -51,6 +51,11 @@ struct Int3 {
 		printf("%c %c %d\t %d\t %d\n", nl, c, x, y, z);
 	}
 
+	std::string toString() const {
+		//return std::format("{} {} {}", x, y, z);
+		return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
+	}
+
 	int x = 0, y = 0, z = 0;
 };
 
@@ -66,17 +71,18 @@ struct Float3 {
 	__host__ __device__ Float3(const int& x, const int& y, const int& z) : x(static_cast<float>(x)), y(static_cast<float>(y)), z(static_cast<float>(z)) {}
 	__host__ Float3(const double& x, const double& y, const double& z) : x(static_cast<float>(x)), y(static_cast<float>(y)), z(static_cast<float>(z)) {}
 
-	__host__ __device__  inline Float3 operator-() const { return Float3(-x, -y, -z); }
+	__host__ __device__ inline Float3 operator-() const { return Float3(-x, -y, -z); }
 	__host__ __device__ inline Float3 operator * (const float a) const { return Float3(x * a, y * a, z * a); }
-	__host__ __device__ inline Float3 operator * (const Float3 a) const { return Float3(x * a.x, y * a.y, z * a.z); }
+	__host__ __device__ inline Float3 operator * (const Float3& a) const { return Float3(x * a.x, y * a.y, z * a.z); }
 	__host__ __device__ inline Float3 operator / (const float a) const { return Float3(x / a, y / a, z / a); }
-	__host__ __device__ inline Float3 operator / (const Float3 a) const { return Float3(x / a.x, y / a.y, z / a.z); }
-	__host__ __device__ inline Float3 operator + (const Float3 a) const { return Float3(x + a.x, y + a.y, z + a.z); }
-	__host__ __device__ inline Float3 operator - (const Float3 a) const { return Float3(x - a.x, y - a.y, z - a.z); }
-	__host__ __device__ inline bool operator == (const Float3 a) const { return (a.x == x && a.y == y && a.z == z); }
-	__host__ __device__ inline void operator += (const Float3 a) { x += a.x; y += a.y; z += a.z; }
-	__host__ __device__ inline void operator -= (const Float3 a) { x -= a.x; y -= a.y; z -= a.z; }
+	__host__ __device__ inline Float3 operator / (const Float3& a) const { return Float3(x / a.x, y / a.y, z / a.z); }
+	__host__ __device__ inline Float3 operator + (const Float3& a) const { return Float3(x + a.x, y + a.y, z + a.z); }
+	__host__ __device__ inline Float3 operator - (const Float3& a) const { return Float3(x - a.x, y - a.y, z - a.z); }
+	__host__ __device__ inline bool operator == (const Float3& a) const { return (a.x == x && a.y == y && a.z == z); }
+	__host__ __device__ inline void operator += (const Float3& a) { x += a.x; y += a.y; z += a.z; }
+	__host__ __device__ inline void operator -= (const Float3& a) { x -= a.x; y -= a.y; z -= a.z; }
 	__host__ __device__ inline void operator *= (const float a) { x *= a; y *= a; z *= a; }
+	
 
 	//__device__ inline Float3 mul_highres(const double d) const {
 	//	return Float3(
@@ -122,15 +128,7 @@ struct Float3 {
 	__host__ __device__ inline float lenSquared() const { return (float)(x * x + y * y + z * z); }
 	__host__ __device__ Float3 zeroIfAbove(float a) { return Float3(x * (x < a), y * (y < a), z * (z < a)); }
 	__host__ __device__ Float3 zeroIfBelow(float a) { return Float3(x * (x > a), y * (y > a), z * (z > a)); }
-	__host__ __device__ Float3 elementwiseModulus(float a) {
-		while (x > a)
-			x -= a;
-		while (y > a)
-			y -= a;
-		while (z > a)
-			z -= a;
-		return *this;
-	}
+
 
 	//__host__ __device__ float getAngleSigned(Float3 a) { return atan2f(this->cross(a).dot(a), this->dot(a)); }
 
@@ -192,6 +190,10 @@ struct Float3 {
 			printf("%c %c %.0f\t %.0f\t %.0f\n",nl, c, x, y, z);
 	}
 
+	std::string toString() const {
+		//return std::format("{} {} {}", x, y, z);
+		return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
+	}
 
 	__host__ __device__ void rotateAroundOrigo(Float3 pitch_yaw_roll) {	//pitch around x, yaw around z, tilt around y
 		// pitch and yaw is relative to global coordinates. 
@@ -275,32 +277,32 @@ struct Float3 {
 };
 
 
-struct Double3 {
-	__host__ __device__ Double3() {}
-	__host__ __device__ Double3(double a) : x(a), y(a), z(a) {}
-	__host__ __device__ Double3(double x, double y, double z) : x(x), y(y), z(z) {}
-	__host__ __device__ Double3(Float3 a) : x((double)a.x), y((double)a.y), z((double)a.z) {}
-
-	__host__ __device__ inline Double3 operator + (const Float3 a) const {
-		return Double3(x + (double)a.x, y + (double)a.y, z + (double)a.z);
-	}
-	__host__ __device__ inline Double3 operator + (const Double3 a) const { return Double3(x + a.x, y + a.y, z + a.z); }
-	__host__ __device__ inline void operator += (const Float3 a) { x += (double)a.x; y += (double)a.y; z += (double)a.z; }
-	__host__ __device__ inline void operator += (const Double3 a) { x += a.x; y += a.y; z += a.z; }
-	__host__ __device__ inline Double3 operator - (const Double3 a) const { return Double3(x - a.x, y - a.y, z - a.z); }
-
-	__host__ __device__ inline double len() { return (double)sqrt(x * x + y * y + z * z); }
-
-	__host__ __device__ Float3 toFloat3() const {
-		return Float3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
-	}
-
-	__host__ __device__ void print(char c = '_') {
-		printf("%c %.10f %.10f %.10f\n", c, x, y, z);
-	}
-
-	double x = 0, y = 0, z = 0;
-};
+//struct Double3 {
+//	__host__ __device__ Double3() {}
+//	__host__ __device__ Double3(double a) : x(a), y(a), z(a) {}
+//	__host__ __device__ Double3(double x, double y, double z) : x(x), y(y), z(z) {}
+//	__host__ __device__ Double3(Float3 a) : x((double)a.x), y((double)a.y), z((double)a.z) {}
+//
+//	__host__ __device__ inline Double3 operator + (const Float3 a) const {
+//		return Double3(x + (double)a.x, y + (double)a.y, z + (double)a.z);
+//	}
+//	__host__ __device__ inline Double3 operator + (const Double3 a) const { return Double3(x + a.x, y + a.y, z + a.z); }
+//	__host__ __device__ inline void operator += (const Float3 a) { x += (double)a.x; y += (double)a.y; z += (double)a.z; }
+//	__host__ __device__ inline void operator += (const Double3 a) { x += a.x; y += a.y; z += a.z; }
+//	__host__ __device__ inline Double3 operator - (const Double3 a) const { return Double3(x - a.x, y - a.y, z - a.z); }
+//
+//	__host__ __device__ inline double len() { return (double)sqrt(x * x + y * y + z * z); }
+//
+//	__host__ __device__ Float3 toFloat3() const {
+//		return Float3(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+//	}
+//
+//	__host__ __device__ void print(char c = '_') {
+//		printf("%c %.10f %.10f %.10f\n", c, x, y, z);
+//	}
+//
+//	double x = 0, y = 0, z = 0;
+//};
 
 // LIMA Coordinate3
 struct Coord {
@@ -338,6 +340,10 @@ struct Coord {
 		printf(" %c %d %d %d [pico]\n", c, x / 100000, y / 100000, z / 100000); }
 	__host__ __device__ bool isZero() const { return (x == 0 && y == 0 && z == 0); }
 
+	__device__ __host__ static int32_t max(int l, int r) { return l > r ? l : r; }
+
+	__device__ __host__ int32_t maxElement() const { return max(std::abs(x), max(std::abs(y), std::abs(z))); }
+
 	__host__ int32_t* get(int dim) {
 		switch (dim)
 		{
@@ -370,12 +376,20 @@ struct NodeIndex : public Int3 {
 
 	__device__ bool isZero() const { return (x == 0 && y == 0 && z == 0); }
 
+	__device__ int sum() const { return std::abs(x) + std::abs(y) + std::abs(z); }
+
 	__host__ int largestMagnitudeElement() const {
 		const Int3 m = this->abs();
 		return std::max(
 			std::max(m.x, m.y), 
 			m.z
 		);
+	}
+
+	__device__ __host__ bool isInBox(int nodes_per_dim) const {
+		if (x < 0 || y < 0 || z < 0 || x >= nodes_per_dim || y >= nodes_per_dim || z >= nodes_per_dim)
+			return false;
+		return true;
 	}
 };
 
@@ -421,8 +435,10 @@ struct LimaPosition {
 //}
 
 struct BoundingBox {
-	BoundingBox() {}
-	BoundingBox(Float3 min, Float3 max) : min(min), max(max) {}
+	BoundingBox(
+		Float3 min = Float3{ std::numeric_limits<float>::max() },
+		Float3 max = Float3{ std::numeric_limits<float>::lowest() }) 
+		: min(min), max(max) {}
 
 
 	Float3 min, max;
@@ -471,8 +487,48 @@ private:
 	__device__ T get(int index) const { return matrix[index]; }
 };
 
-using BondedParticlesLUT = FixedSizeMatrix<bool, MAX_COMPOUND_PARTICLES>;
+template <int len>
+class FixedSizeMatrix<bool,len>{
+public:
+	__device__ FixedSizeMatrix() {}
+	__host__ FixedSizeMatrix(bool val) {
+		//uint8_t bit = val ? 1 : 0;
+		for (int i = 0; i < m_size; i++) {
+			matrix[i] = val ? 0xFF : 0;
+		}
+	}
 
+	__host__ __device__ bool get(int i1, int i2) const {
+		int index = i1 + i2 * m_len;
+		int byteIndex = index / 8;
+		int bitIndex = index % 8;
+		return (matrix[byteIndex] >> bitIndex) & 1U;
+	}
+
+	__host__ void set(int i1, int i2, bool val) {
+		int index = i1 + i2 * m_len;
+		int byteIndex = index / 8;
+		int bitIndex = index % 8;
+		if (val)
+			matrix[byteIndex] |= (1U << bitIndex);
+		else
+			matrix[byteIndex] &= ~(1U << bitIndex);
+	}
+
+	__device__ void load(const FixedSizeMatrix<bool, len>& src) {
+		for (int i = threadIdx.x; i < m_size; i += blockDim.x) {
+			matrix[i] = src.matrix[i];
+		}
+	}
+
+private:
+	const static int m_len = len;
+	const static int m_size = (m_len * m_len + 7) / 8; // Ceil division
+	uint8_t matrix[m_size]{};
+};
+
+//using BondedParticlesLUT = FixedSizeMatrix<bool, MAX_COMPOUND_PARTICLES>;
+using BondedParticlesLUT = FixedSizeMatrix<bool,MAX_COMPOUND_PARTICLES>;
 
 class BondedParticlesLUTManager {
 	static const int max_bonded_compounds = 5;	// first 3: self, res-1 and res+1. The rest are various h bonds i think

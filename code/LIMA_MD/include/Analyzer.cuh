@@ -2,15 +2,10 @@
 
 #include "LimaTypes.cuh"
 #include "Simulation.cuh"
-#include "Engine.cuh"
+#include "Utilities.h"
 
 #include <vector>
-#include <iostream>
-#include <chrono>
-#include <cstring>
 #include <string>
-//#include "Forcefield.cuh"
-
 
 
 class Analyzer {
@@ -54,6 +49,9 @@ private:
 
 	float* potE_buffer_device = nullptr;
 	float* vel_buffer_device = nullptr;
+
+	ForceField_NB* forcefield_device = nullptr;	// Just used to find mass of particles in kernel
+	Compound* compounds_device = nullptr;			// 
 
 	std::unique_ptr<LimaLogger> m_logger;
 };
