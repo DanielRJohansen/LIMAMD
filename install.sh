@@ -48,6 +48,7 @@ if [ "$1" = "-all" ]; then
         sudo pacman -S cuda --noconfirm
         sudo pacman -S cuda-tools --noconfirm
         sudo pacman -S base-devel --noconfirm
+        sudo pacman -S gcc-13 --noconfirm
         ;;
     "Ubuntu")
         sudo apt-get update
