@@ -16,11 +16,12 @@ int mdrun(int argc, char** argv)
 
 
 	// Call the program /opt/LIMA/Applications/mdrun with the same arguments
-    std::string command = "~/LIMA/applications/mdrun";
-    for (int i = 1; i < argc; ++i) {
+    const std::string home = getenv("HOME");
+    std::string command = home + "/LIMA/applications/mdrun";
+    for (int i = 2; i < argc; ++i) {    // argv[1] is mdrun
         command += " ";
         command += argv[i];
     }
-
+    std::cout << "executing cmd: " << command << "\n";
     return system(command.c_str());
 }

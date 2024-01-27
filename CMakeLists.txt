@@ -32,12 +32,12 @@ find_package(OpenGL REQUIRED)
 # Set the installation prefix
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../applications")
 
-add_subdirectory(LIMA_BASE)
-add_subdirectory(LIMA_ENGINE)
-add_subdirectory(LIMA_TOOLS)
-add_subdirectory(LIMA_FORCEFIELDMAKER)
-add_subdirectory(LIMA_MD)
-add_subdirectory(LIMA_TESTS)
-add_subdirectory(LIMA_SERVER)
+add_subdirectory(code/LIMA_BASE)
+add_subdirectory(code/LIMA_ENGINE)
+add_subdirectory(code/LIMA_TOOLS)
+add_subdirectory(code/LIMA_FORCEFIELDMAKER)
+add_subdirectory(code/LIMA_MD)
+add_subdirectory(code/LIMA_TESTS)
+add_subdirectory(code/LIMA_SERVER)
 
 
