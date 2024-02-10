@@ -4,7 +4,7 @@
 # Then it installs itself in /opt/LIMA/
 # Finally it executes 2 tests so ensure everything is working correctly
 
-if [ "$(id -u)" -ne 0 ]; then echo "Please run as root." >&2; exit 1;fi
+#if [ "$(id -u)" -ne 0 ]; then echo "Please run as root." >&2; exit 1;fi
 
 echo "\nWelcome to the LIMA Dynamics installer\n"
 
@@ -37,7 +37,6 @@ if [ "$1" = "-all" ]; then
         sudo pacman -S cuda --noconfirm
         sudo pacman -S cuda-tools --noconfirm
         sudo pacman -S base-devel --noconfirm
-        sudo pacman -S gcc-13 g++-13 --noconfirm
         ;;
     "Ubuntu")
         sudo apt-get install -y make
@@ -67,21 +66,37 @@ install_dir="$PWD"  # dir where repository with install files are
 program_dir="/opt/LIMA"
 
 echo "Using $program_dir as install directory"
-rm -rf "$program_dir"
-mkdir "$program_dir"/
+sudo rm -rf "$program_dir"
+sudo mkdir "$program_dir"
 
 # copy everything from installdir to program_dir
-cp -r "$install_dir"/* "$program_dir"/
+sudo cp -r "$install_dir"/* "$program_dir"/
+sudo chmod -R a+rwx $program_dir
 
 # Build the public "lima" executable
 cd "$program_dir"/build
 cmake "$program_dir/code/LIMA_APP/"
-make install
+if [ $? -ne 0 ]; then
+    echo "CMake failed"
+    exit 1
+fi
+sudo make install
+if [ $? -ne 0 ]; then
+    echo "Make failed"
+    exit 1
+fi
+# Make this readable for all users
+#chmod 777 /opt/LIMA -R
 echo -e "\n\tLIMA client have been installed\n\n"
 
 
-# Build LIMA once in /opt/, to ensure everything works
-cd "$program_dir/build"
+# Build LIMA once in ~/LIMA, to ensure everything works
+userprogram_dir="$HOME/LIMA"
+# Make this dir readable and writable for the user and the group, but only readable for others
+mkdir -p "$userprogram_dir"
+cp -r "$install_dir"/* "$userprogram_dir"/
+
+cd "$userprogram_dir/build"
 rm -rf ./*
 cmake ../ 
 if [ $? -ne 0 ]; then
@@ -93,6 +108,7 @@ if [ $? -ne 0 ]; then
     echo "Make failed"
     exit 1
 fi
+#chmod 777 $userprogram_dir -R
 
 echo -e "\n\tAll LIMA applications have been installed\n\n\n"
 
@@ -109,28 +125,29 @@ echo -e "\n\tAll LIMA applications have been installed\n\n\n"
 
 # Run Self Test
 # check cuda works
-$program_dir"/build/code/LIMA_ENGINE/engine_self_test"
+$userprogram_dir"/build/code/LIMA_ENGINE/engine_self_test"
 if [ $? -ne 0 ]; then
     echo "engine_self_test failed"
     exit 1
 fi
 
 # Run small sim
-cd "$install_dir"
+cd "$userprogram_dir"
 if [ "$1" != "-notest" ]; then
     #su -c "./selftest.sh" $SUDO_USER
-    sims_dir=/home/$SUDO_USER/LIMA/simulations
+    sims_dir=/$HOME/LIMA/simulations
     echo "Running self test in dir $sims_dir"
 
     mkdir -p "$sims_dir"
 
-
-    cd /home/$SUDO_USER/LIMA
+    cd /$HOME/LIMA
     git clone --quiet https://github.com/DanielRJohansen/LIMA_data 2>/dev/null
 
     cp -r ./LIMA_data/* $sims_dir/ #exclude .gitignore
     #rsync -q -av --exclude '.*' ./LIMA_data/ "$sims_dir/"  # Exclude hidden files/directories
-    chmod 777 /home/$SUDO_USER/LIMA -R
+
+#    chmod 777 /home/$SUDO_USER/LIMA -R
+
 
     cd "$sims_dir"/T4Lysozyme
     #cd "$sims_dir"/manyt4
