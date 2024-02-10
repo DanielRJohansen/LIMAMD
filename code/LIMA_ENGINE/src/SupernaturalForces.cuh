@@ -23,7 +23,7 @@ namespace SupernaturalForces {
 
 	namespace {// anon namespace
 		__device__ void _applyHorizontalSqueeze(const Float3& avg_compound_position_nm, const float& avg_compound_force_z, Float3& particle_force, float particle_mass) {
-			const float box_padding = 1.4f;	// The dist to the box edges (from compound center) we want to enforce, so switching to PBC wont cause immediate collisions
+			const float box_padding = 0.5f;	// The dist to the box edges (from compound center) we want to enforce, so switching to PBC wont cause immediate collisions
 
 			const float dist_x = CPPD::max(std::abs(BOX_LEN_HALF_NM - avg_compound_position_nm.x) - BOX_LEN_HALF_NM + box_padding, 0.f);
 			const float dist_y = CPPD::max(std::abs(BOX_LEN_HALF_NM - avg_compound_position_nm.y) - BOX_LEN_HALF_NM + box_padding, 0.f);
@@ -42,9 +42,9 @@ namespace SupernaturalForces {
 			force_y += dist_y * lin_factor;
 
 			// Exp force
-			const float exp_factor = 0.000001;
+			/*const float exp_factor = 0.000000;
 			force_x += dist_x * dist_x * exp_factor;
-			force_y += dist_y * dist_y * exp_factor;
+			force_y += dist_y * dist_y * exp_factor;*/
 
 			// Apply signed force
 			if (avg_compound_position_nm.x > BOX_LEN_HALF_NM)

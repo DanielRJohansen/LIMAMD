@@ -1,17 +1,27 @@
+#include <filesystem>
+#include <string>
+#include <assert.h>  
+
+
+
 #include "Environment.h"
 #include "Printer.h"
 #include "MDFiles.h"
-#include "SimulationBuilder.h"
 #include "EngineUtils.cuh"
+#include "CompoundBuilder.h"
+#include "VirtualPathMaker.h"
+#include "DisplayV2.h"
+#include "BoxBuilder.cuh"
+#include "Engine.cuh"
+#include "ForcefieldMaker.h"
 
-#include <filesystem>
-#include <stdexcept>
 
 using namespace LIMA_Print;
 using std::string;
 using std::cout;
 using std::printf;
 namespace lfs = Filehandler;
+namespace fs = std::filesystem;
 
 Environment::Environment(const string& wf, EnvMode mode, bool save_output)
 	: work_dir(wf)
@@ -31,8 +41,14 @@ Environment::Environment(const string& wf, EnvMode mode, bool save_output)
 		break;
 	}
 
+	const auto moldir = fs::path(wf) / "molecule";	// TODO: Find a better place for this
+	if (!fs::exists(moldir))
+		fs::create_directory(moldir);
+
 	boxbuilder = std::make_unique<BoxBuilder>(std::make_unique<LimaLogger>(LimaLogger::normal, m_mode, "boxbuilder", work_dir));
 }
+
+Environment::~Environment() {}
 
 void Environment::CreateSimulation(float boxsize_nm) {
 	SimParams simparams{};
@@ -42,10 +58,10 @@ void Environment::CreateSimulation(float boxsize_nm) {
 }
 
 void Environment::CreateSimulation(string gro_path, string topol_path, const SimParams params) {
-	const ParsedGroFile gro_file = MDFiles::loadGroFile(gro_path);
+	const auto gro_file = MDFiles::loadGroFile(gro_path);
 	const std::unique_ptr<ParsedTopologyFile> topol_file = MDFiles::loadTopologyFile(topol_path);
 
-	CreateSimulation(gro_file, *topol_file, params);
+	CreateSimulation(*gro_file, *topol_file, params);
 }
 
 void Environment::CreateSimulation(const ParsedGroFile& grofile, const ParsedTopologyFile& topolfile, const SimParams& params) 
@@ -87,14 +103,17 @@ void Environment::CreateSimulation(Simulation& simulation_src, const SimParams p
 	simulation->forcefield = std::make_unique<Forcefield>(m_mode == Headless ? SILENT : V1, lfs::pathJoin(work_dir, "molecule"));
 }
 
-void Environment::createMembrane(bool carryout_em) {
-	// Load in the lipid types, for now just POPC
-	const std::string POPC_PATH = main_dir + "/resources/Lipids/POPC/";
-	const ParsedGroFile inputgrofile = MDFiles::loadGroFile(POPC_PATH + "popc.gro");
-	std::unique_ptr<ParsedTopologyFile> inputtopologyfile = MDFiles::loadTopologyFile(POPC_PATH + "POPC.itp");
+void Environment::createMembrane(LipidsSelection& lipidselection, bool carryout_em) {
+	// Load the files for each lipid
+	for (auto& lipid : lipidselection) {
+		const std::string lipid_path = main_dir + "/resources/Lipids/" + lipid.lipidname + "/";
+		lipid.grofile = MDFiles::loadGroFile(lipid_path + lipid.lipidname + ".gro");
+		lipid.topfile = MDFiles::loadTopologyFile(lipid_path + lipid.lipidname + ".itp");
+	}
+
 
 	// Insert the x lipids with plenty of distance in a non-pbc box
-	auto monolayerfiles = SimulationBuilder::buildMembrane({ inputgrofile, *inputtopologyfile }, simulation->box_host->boxparams.dims);
+	auto monolayerfiles = SimulationBuilder::buildMembrane(lipidselection, simulation->box_host->boxparams.dims);
 
 	// Create simulation and run on the newly created files in the workfolder
 	monolayerfiles.first.printToFile(lfs::pathJoin(work_dir, "/molecule/monolayer.gro"));
@@ -104,7 +123,7 @@ void Environment::createMembrane(bool carryout_em) {
 	{
 		SimParams ip{};
 		ip.bc_select = NoBC;
-		ip.n_steps = carryout_em ? 10000 : 0;
+		ip.n_steps = carryout_em ? 15000 : 0;
 		ip.snf_select = HorizontalSqueeze;
 		ip.em_variant = true;
 		//CreateSimulation(lfs::pathJoin(work_dir, "/molecule/membrane.gro"), lfs::pathJoin(work_dir, "/molecule/membrane.top"), ip);
@@ -124,10 +143,12 @@ void Environment::createMembrane(bool carryout_em) {
 	// Copy each particle, and flip them around the xy plane, so the monolayer becomes a bilayer
 	auto bilayerfiles = SimulationBuilder::makeBilayerFromMonolayer({ monolayer_grofile_em, monolayerfiles.second }, simulation->box_host->boxparams.dims);
 
+	bilayerfiles.second.printToFile(lfs::pathJoin(work_dir, "/molecule/bilayer.top"));
+
 	// Run EM for a while - with pbc
 	{
 		SimParams ip{};
-		ip.n_steps = carryout_em ? 30000 : 0;
+		ip.n_steps = carryout_em ? 3000 : 0;
 		ip.dt = 50.f;
 		ip.bc_select = carryout_em ? PBC : NoBC;	// Cannot insert compounds with PBC, if they are not in box
 		CreateSimulation(bilayerfiles.first, bilayerfiles.second, ip);
@@ -153,7 +174,7 @@ void Environment::setupEmptySimulation(const SimParams& simparams) {
 	verifySimulationParameters();
 }
 
-void Environment::verifySimulationParameters() {	// Not yet implemented
+void constexpr Environment::verifySimulationParameters() {	// Not yet implemented
 	static_assert(THREADS_PER_COMPOUNDBLOCK >= MAX_COMPOUND_PARTICLES, "Illegal kernel parameter");
 	//static_assert(BOX_LEN > 3.f, "Box too small");
 	//static_assert(BOX_LEN > CUTOFF_NM *2.f, "CUTOFF too large relative to BOXLEN");
@@ -510,13 +531,6 @@ void Environment::makeVirtualTrajectory(string trj_path, string waterforce_path)
 //}
 
 
-
-SimParams Environment::loadSimParams(const std::string& path) {
-	SimParams simparams{};
-	auto param_dict = Filehandler::parseINIFile(path);
-	simparams.overloadParams(param_dict);
-	return simparams;
-}
 
 std::unique_ptr<Simulation> Environment::getSim() {
 	// Should we delete the forcefield here?

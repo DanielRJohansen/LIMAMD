@@ -10,9 +10,9 @@
 #include <string>
 #include <unistd.h>
 
-// Are these necessary?
-#include <sys/stat.h>
-#include <sys/types.h>
+//// Are these necessary?
+//#include <sys/stat.h>
+//#include <sys/types.h>
 
 namespace fs = std::filesystem;
 
@@ -30,10 +30,20 @@ namespace SelfRecompile {
 
         while (std::getline(infile, line))
         {
+            // Removed escaped char from start of line
+            if (line[0] == '\t') {
+                line.erase(0, 1);
+            }
+
             // Check if the line starts with a "/" (comment)
-            if (!line.empty() && line[0] == '/') {
+            if (line.empty() || line[0] == '/') {
                 continue; // Ignore comments
             }
+
+
+            // Check if line contains a key-value pair
+            if (line.find('=') == std::string::npos)
+                continue;
 
             std::istringstream iss(line);
             std::string type1, type2, key, equals, value;
@@ -58,7 +68,11 @@ namespace SelfRecompile {
             std::istringstream iss(line);
             std::string key, value;
             if (std::getline(iss, key, '=') && std::getline(iss, value)) {
-                //std::cout << std::format("Key {} value {}\n", key, value);
+                // The value may contain a comment, so remove '#' and anything that comes after it			
+                const size_t comment_pos = value.find('#');
+                if (comment_pos != std::string::npos)
+                    value = value.substr(0, comment_pos);
+
 
                 if (constants.find(key) != constants.end()) {
                     constants[key].value = value;
@@ -69,10 +83,12 @@ namespace SelfRecompile {
 
     void writeConstantsToFile(const std::string& filename, const std::map<std::string, UserConstantInfo>& constants) {
         std::ofstream outfile(filename);
-        outfile << "#pragma once\n\n";
+        outfile << "#pragma once\n\nnamespace UserConstants {\n";
+
         for (const auto& pair : constants) {
             outfile << pair.second.type << " " << pair.first << " = " << pair.second.value << ";\n";
         }
+        outfile << "}\n";
     }
 
     void overrideUserParams() {

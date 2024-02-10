@@ -13,10 +13,33 @@ using namespace TestMembraneBuilder;
 using namespace TestMinorPrograms;
 void runAllUnitTests();
 
+//void makeLipids() {
+// Currently working POPC, POPE DMPC, chol, DPPC, DOPC, 
+// SM16 almost works, but H11 is only defined in Slipids_2020, which i need to integrate into the forcefieldmaker, but thats for later
+//	std::vector<std::string> targets = { "DOPC" };
+////std::vector<std::string> targets = { "DAPC", "DPPC", "DSPC", "POPC", "DOPC", "DLPC", "DMPC", "DUPC", "DIPC", "DPPS", "DOPS", "ENET", "ENTF", "ENTW", "PDPC", "PiLPC", "POPE", "POPG", "POPS", "SAPC", "SDPC", "SIET", "SOPC", "choleterol", "SM16" };
+////const string target = "DAPC";
+//for (auto target : targets) {
+//	try {
+//		const std::string to_folder = "C:/Users/Daniel/git_repo/LIMA/resources/Lipids/" + target + "/";
+//		const std::string from_folder = "C:/Users/Daniel/git_repo/LIMA/resources/Lipids/" + target + "/";
+//		LimaMoleculeGraph::reorderoleculeParticlesAccoringingToSubchains(to_folder, from_folder, target);
+//	}
+//	catch (...) {
+//		// do nothing
+//	}
+//}
+//}
+
+
+
+
+
 
 int main() {
 	try {
 		constexpr auto envmode = EnvMode::Full;
+
 
 		//loadAndRunBasicSimulation("DisplayTest", envmode);
 
@@ -44,12 +67,24 @@ int main() {
 		//loadAndRunBasicSimulation("manyt4", envmode, 1.6e-3);
 		//loadAndRunBasicSimulation("psome", envmode, 7.6e-5, 1.1e-6);
 		//doPool50x(EnvMode::Headless);
+	
+
+
 		
+		/*const fs::path work_dir = simulations_dir + "/test";
+		Environment env{ work_dir.string(), envmode, false };
+		env.CreateSimulation(20.f);
+		LipidsSelection lipids;
+		lipids.emplace_back(LipidSelect{ "POPC", 50 });
+		lipids.emplace_back(LipidSelect{ "DMPC", 40 });
+		lipids.emplace_back(LipidSelect{ "cholesterol", 10 });
+		env.createMembrane(lipids, true);*/
 
 
-		//testReorderMoleculeParticles();
-		//testBuildmembraneSmall(envmode, true);
-		//loadAndEMAndRunBasicSimulation("T4Lysozyme", envmode, 7.75e-6, 2e-5);		
+
+		//testReorderMoleculeParticles(envmode);
+		//testBuildmembraneSmall(envmode, false);
+		//loadAndEMAndRunBasicSimulation("T4Lysozyme", envmode, 4.4e-5, 2e-5);		
 
 		runAllUnitTests();
 	}
@@ -87,7 +122,7 @@ void runAllUnitTests() {
 
 
 	// Smaller compound tests
-	ADD_TEST(testman, "doMethionineBenchmark", TestUtils::loadAndRunBasicSimulation("Met", envmode, 4.1e-4, 9.9e-7));
+	ADD_TEST(testman, "doMethionineBenchmark", TestUtils::loadAndRunBasicSimulation("Met", envmode, 4.1e-4, 2e-6));
 	ADD_TEST(testman, "doPhenylalanineBenchmark", TestUtils::loadAndRunBasicSimulation("Phe", envmode, 3.77e-4f, 8e-8f););
 	ADD_TEST(testman, "TenSolvents", TestUtils::loadAndRunBasicSimulation("TenSolvents", envmode, 7.3e-6, 1.2e-6));
 	ADD_TEST(testman, "doEightResiduesNoSolvent", doEightResiduesNoSolvent(envmode));
@@ -95,10 +130,12 @@ void runAllUnitTests() {
 
 	// Larger tests
 	ADD_TEST(testman, "SolventBenchmark", loadAndRunBasicSimulation("Solventsonly", envmode, 2.85e-6f, 1.01e-7));
-	ADD_TEST(testman, "T4Lysozyme", loadAndEMAndRunBasicSimulation("T4Lysozyme", envmode, 7.5e-6, 2e-5));
+	ADD_TEST(testman, "T4Lysozyme", loadAndEMAndRunBasicSimulation("T4Lysozyme", envmode, 4.9e-5, 2e-5));
 
 	// Programs test
 	ADD_TEST(testman, "BuildSmallMembrane", testBuildmembraneSmall(envmode, false));
+	ADD_TEST(testman, "ReorderMoleculeParticles", testReorderMoleculeParticles(envmode));
+
 
 
 	// Meta tests

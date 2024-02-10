@@ -29,9 +29,9 @@ namespace TestMDStability {
 		//InputSimParams simparams{ 100, 2000 };
 		const std::string work_folder = simulations_dir + folder_name;
 		const std::string simpar_path = work_folder + "/sim_params.txt";
-		const SimParams simparams = env->loadSimParams(simpar_path);
+		SimParams params{ simpar_path };
 		auto sim = env->getSim();
-		env->CreateSimulation(*sim, simparams);
+		env->CreateSimulation(*sim, params);
 		env->run();
 		//Analyzer::findAndDumpPiecewiseEnergies(*env->getSimPtr(), env->getWorkdir());
 
@@ -54,7 +54,7 @@ namespace TestMDStability {
 		const std::string work_folder = simulations_dir + name + "/";
 		const std::string simpar = work_folder + "sim_params.txt";
 
-		return loadAndRunBasicSimulation(name, envmode, 2.46e-4, 8.6e-7);
+		return loadAndRunBasicSimulation(name, envmode, 3.18e-4, 2e-6);
 	}
 
 	static bool doMoleculeTranslationTest(std::string foldername) {

@@ -50,7 +50,7 @@ const float rminToSigma = powf(2.f, (1.f / 6.f));
 
 const int MAX_REPRESENTABLE_DIFF_NM = 16;	// I should probably do this some other way..
 
-constexpr float CUTOFF_LM = CUTOFF_NM * NANO_TO_LIMA;				// fm
+constexpr float CUTOFF_LM = UserConstants::CUTOFF_NM * NANO_TO_LIMA;				// fm
 
 constexpr double BOLTZMANNCONSTANT = 1.38066e-23f;	// [J/K]
 constexpr double AVOGADROSNUMBER = 6.02214076e23;	
@@ -59,11 +59,9 @@ constexpr double AVOGADROSNUMBER = 6.02214076e23;
 
 
 
-
-
 // ------------------------------------------------ Box Parameters ---------------------------------------------- //
+constexpr int _BOX_LEN_PM = UserConstants::boxlen * 1000;
 constexpr float BOX_LEN_NM = static_cast<float>(_BOX_LEN_PM) / 1000.f;
-
 const int64_t BOX_LEN_i = static_cast<std::int64_t>(_BOX_LEN_PM) * PICO_TO_LIMA;
 constexpr float BOX_LEN = BOX_LEN_NM * NANO_TO_LIMA;		// Must be > twice the len of largest compound
 constexpr float BOX_LEN_HALF = BOX_LEN / 2.f;
@@ -113,7 +111,7 @@ const int GRIDNODE_QUERY_RANGE = 2;
 // If we go larger, a single compound can stretch over 2 nm!
 //constexpr int MAX_COMPOUND_PARTICLES = IGNORE_HYDROGEN ? 48 : 64;
 constexpr int MAX_COMPOUND_PARTICLES = 64;
-const int MAX_COMPOUNDS = 4096;			// Arbitrary i think. true max int16_t max - 1. Can also cause trouble when the bondedparticlesLUT static array becomes very large bytewise..
+const int MAX_COMPOUNDS = 4096*2;			// Arbitrary i think. true max int16_t max - 1. Can also cause trouble when the bondedparticlesLUT static array becomes very large bytewise..
 
 const int NEIGHBORLIST_MAX_COMPOUNDS = 128+64+128;	// TODO: We need to work on getting this number down!
 //const int NEIGHBORLIST_MAX_SOLVENTS = 6144;
