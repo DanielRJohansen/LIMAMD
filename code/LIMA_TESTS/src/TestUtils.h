@@ -14,43 +14,84 @@
 #include <iostream>
 #include <optional>
 #include <functional>
-
+#include <filesystem>
 
 namespace TestUtils {
 #ifndef __linux__
-	const std::string simulations_dir = "C:/PROJECTS/Quantom/Simulation/";
+	//const std::string simulations_dir = "C:/PROJECTS/Quantom/Simulation/";
+
+
+	const std::string simulations_dir = "C:/Users/Daniel/git_repo/LIMA_data/";
 #else
 	const std::string simulations_dir = "/home/lima/Desktop/LIMA/Simulations/";
 #endif
 
+	std::string getMostSuitableGroFile(const std::string& workdir) {
+		const std::string em = workdir + "/molecule/em.gro";
+		const std::string conf = workdir + "/molecule/conf.gro";
+		if (std::filesystem::exists(em)) {
+			return em;
+		}
+		else {
+			return conf;
+		}
+	}
+
 	// Creates a simulation from the folder which should contain a molecule with conf and topol
 	// Returns an environment where solvents and compound can still be modified, and nothing (i hope) have
 	// yet been moved to device. I should find a way to enforce this...
-	static std::unique_ptr<Environment> basicSetup(const std::string& foldername, LAL::optional<InputSimParams> simparams, EnvMode envmode) {
+	static std::unique_ptr<Environment> basicSetup(const std::string& foldername, LAL::optional<SimParams> simparams, EnvMode envmode) {
 		
-		const std::string work_folder = simulations_dir + foldername + "/";
-		const std::string conf = work_folder + "molecule/conf.gro";
-		const std::string topol = work_folder + "molecule/topol.top";
-		const std::string simpar = work_folder + "sim_params.txt";
+		const std::string work_folder = simulations_dir + foldername;
+		//const std::string conf = work_folder + "molecule/conf.gro";
+		const std::string conf = getMostSuitableGroFile(work_folder);
+		const std::string topol = work_folder + "/molecule/topol.top";
+		const std::string simpar = work_folder + "/sim_params.txt";
 
-		auto env = std::make_unique<Environment>(work_folder, envmode );
+		auto env = std::make_unique<Environment>(work_folder, envmode, false);
 
-		const InputSimParams ip = simparams.hasValue()
+		const SimParams ip = simparams.hasValue()
 			? simparams.value()
-			: env->loadInputSimParams(simpar);
+			: SimParams{ simpar };
+		
 
 		env->CreateSimulation(conf, topol, ip);
 
 		return std::move(env);
 	}
 
+	// assumes that all the values are positive
+	bool isOutsideAllowedRange(float value, float target, float allowedRangeFromTarget=0.05) {
+		if (isnan(value)) 
+			return true;
+
+		const float error = std::abs(value - target);
+		return error > target * allowedRangeFromTarget;
+	}
+
+	bool isAboveVcThreshold(float value, float target) {
+		return value > target;
+	}
+
 
 	/// <summary></summary>	
 	/// <returns>{success, error_string(empty if successful)}</returns>
-	std::pair<bool, std::string> evaluateTest(std::vector<float> VCs, float max_vc, std::vector<float> energy_gradients, float max_energygradient_abs) {
+	std::pair<bool, std::string> evaluateTest(std::vector<float> VCs, float target_vc, std::vector<float> energy_gradients, float max_energygradient_abs)
+	{
+		// Pick the correct evaluate function depending on if we have multiple VCs. Cant set a target vc to keep, if we have different sims ;)
+		auto evaluateVC = [&](float vc) {
+			if (VCs.size() > 1) {
+				return isAboveVcThreshold(vc, target_vc);
+			}
+			else {
+				return isOutsideAllowedRange(vc, target_vc);
+			}
+		};
+
+
 		for (auto& vc : VCs) {
-			if (isnan(vc) || vc > max_vc) {					
-				return { false, std::format("Variance Coefficient of {:.3e} superceeded the max of {:.3e}", vc, max_vc) };
+			if (evaluateVC(vc)) {
+				return { false, std::format("Variance Coefficient of {:.3e} was too far from the target {:.3e}", vc, target_vc) };
 			}
 		}
 
@@ -61,7 +102,7 @@ namespace TestUtils {
 		}
 
 		float highest_vc = *std::max_element(VCs.begin(), VCs.end());
-		return { true, std::format("VC {:.3e} / {:.3e}", highest_vc, max_vc)};
+		return { true, std::format("VC {:.3e} / {:.3e}", highest_vc, target_vc)};
 	}
 
 	static void setConsoleTextColorRed() { std::cout << "\033[31m"; }
@@ -179,7 +220,7 @@ namespace TestUtils {
 		EnvMode envmode,
 		float max_vc = 0.001,
 		float max_gradient=1e-7,
-		LAL::optional<InputSimParams> ip = {},
+		LAL::optional<SimParams> ip = {},
 		bool em_variant = false
 	)
 	{
@@ -209,6 +250,40 @@ namespace TestUtils {
 			func();
 		}
 	}
+
+	string compareFilesBitwise(const std::filesystem::path& path1, const std::filesystem::path& path2) {
+		// Open the files
+		std::ifstream file1(path1, std::ifstream::ate);
+		std::ifstream file2(path2, std::ifstream::ate);
+
+		// Check if both files are open
+		if (!file1.is_open() || !file2.is_open()) {
+			return std::format("Failed to open either or both files \n\t\t{} \n\t\t{}", path1.string(), path2.string());
+		}
+
+		// Validate the files. If they are not even 50 bytes long, something is surely wrong
+		if (file1.tellg() < 50 || file2.tellg() < 50) {
+			return std::format("Expected files to be atleast 50 bytes long \n\t\t{} \n\t\t{}", path1.string(), path2.string());
+		}
+		//// Compare file sizes
+		//file1.seekg(0, std::ifstream::end);
+		//file2.seekg(0, std::ifstream::end);
+		//if (file1.tellg() != file2.tellg()) {
+		//	return "Files are of different length";
+		//}
+		// 
+
+		// Move ptr back to beginning of file
+		file1.seekg(0, std::ifstream::beg);
+		file2.seekg(0, std::ifstream::beg);
+
+		// Compare the contents
+		if (!std::equal(std::istreambuf_iterator<char>(file1.rdbuf()), std::istreambuf_iterator<char>(), std::istreambuf_iterator<char>(file2.rdbuf()))) {
+			return std::format("Files did not match bit for bit \n\t\t{} \n\t\t{}", path1.string(), path2.string());
+		};
+		return "";
+	}
+
 }
 
 

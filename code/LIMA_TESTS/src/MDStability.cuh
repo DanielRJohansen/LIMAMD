@@ -18,7 +18,7 @@ namespace TestMDStability {
 	using namespace TestUtils;
 
 	static LimaUnittestResult loadAndEMAndRunBasicSimulation(const string& folder_name, EnvMode envmode, float max_vc = 0.05, float max_gradient=1e-5) {
-		InputSimParams emparams{ 20, 2000, true };
+		SimParams emparams{ 2000, 20, true, PBC };
 		auto env = basicSetup(folder_name, { emparams }, envmode);
 
 		// Do em
@@ -27,13 +27,13 @@ namespace TestMDStability {
 
 		// Do sim
 		//InputSimParams simparams{ 100, 2000 };
-		const std::string work_folder = simulations_dir + folder_name + "/";
-		const std::string simpar_path = work_folder + "sim_params.txt";
-		const InputSimParams simparams = env->loadInputSimParams(simpar_path);
+		const std::string work_folder = simulations_dir + folder_name;
+		const std::string simpar_path = work_folder + "/sim_params.txt";
+		SimParams params{ simpar_path };
 		auto sim = env->getSim();
-		env->CreateSimulation(*sim, simparams);
+		env->CreateSimulation(*sim, params);
 		env->run();
-		Analyzer::findAndDumpPiecewiseEnergies(*env->getSimPtr(), env->getWorkdir());
+		//Analyzer::findAndDumpPiecewiseEnergies(*env->getSimPtr(), env->getWorkdir());
 
 		const auto analytics = env->getAnalyzedPackage();
 		
@@ -50,11 +50,11 @@ namespace TestMDStability {
 	}
 
 	LimaUnittestResult doEightResiduesNoSolvent(EnvMode envmode) {
-		const std::string name = "T4LysozymeNoSolventSmall";
+		const std::string name = "8ResNoSol";
 		const std::string work_folder = simulations_dir + name + "/";
 		const std::string simpar = work_folder + "sim_params.txt";
 
-		return loadAndRunBasicSimulation(name, envmode, 2.6e-4, 7.5e-7);
+		return loadAndRunBasicSimulation(name, envmode, 3.18e-4, 2e-6);
 	}
 
 	static bool doMoleculeTranslationTest(std::string foldername) {

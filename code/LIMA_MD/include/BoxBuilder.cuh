@@ -13,19 +13,28 @@ public:
 	{
 		srand(290128309);
 	};
-	void buildBox(Simulation* simulation);
-	void addCompoundCollection(Simulation* simulation, CompoundCollection& coll);		// Can only use a single "add" function per Simulation for now!!!!!!!!!!!!!
+	void buildBox(Simulation* simulation, float boxsize_nm);
+	void addBoxImage(Simulation* simulation, BoxImage& coll);		// Can only use a single "add" function per Simulation for now!!!!!!!!!!!!!
+	//void addMembrane(Simulation& sim, BoxImage& lipid);
+
+
 	//void addScatteredMolecules(Simulation* simulation, Compound* molecule, int n_copies);
 	//void addDoubleMembrane(Simulation* simulation, Compound* molecule);
 	void finishBox(Simulation* simulation);
 	int solvateBox(Simulation* simulation);					// Returns # of solvate compounds placed
 	int solvateBox(Simulation* simulation, const std::vector<Float3>& solvate_positions);	// Returns # of solvate compounds placed
 
+
+	// Will create a membrane with lipids that are spread far apart
+	//void createMembrane(Simulation& sim);
+
 	// This function expects all ptr's of simulation->box to be pre-allocated on host
-	void copyBoxState(Simulation* simulation, Box* boxsrc, const SimParams& simparams_src, uint32_t boxsrc_current_step);
+	void copyBoxState(Simulation* simulation, std::unique_ptr<Box> boxsrc, const SimSignals& simparams_src, uint32_t boxsrc_current_step);
+
+	bool verifyAllParticlesIsInsideBox(Simulation& sim, float padding = 0.f, bool verbose=true);
 
 private:
-	void insertCompoundInBox(const CompoundFactory& compound, Simulation* simulation);
+	void insertCompoundInBox(const CompoundFactory& compound, Simulation& simulation, Float3 offset = Float3{});
 	
 	void setupDataBuffers(Simulation& simulation, const uint64_t n_steps);
 	void setupTrainingdataBuffers(Simulation& simulation, const uint64_t n_steps);
@@ -51,8 +60,6 @@ private:
 
 
 	// ---------------------------------------------------- Variables ---------------------------------------------------- //
-	const float box_len = BOX_LEN;
-	const float box_base = 0;
 
 	const std::unique_ptr<LimaLogger> m_logger;
 
