@@ -1,36 +1,9 @@
 # LIMA
-The private LIMA-Dynamics main repo
-
-All source code in this directory is property of Daniel Rathleff Johansen, and use of it is not allowed without explicit written confirmation.
-
-
-## How to install
-
-### Easy install
-Clone the repo and run the install script, with the following 4 cmds:
-	git clone https://github.com/DanielRJohansen/LIMAMD
-	cd LIMAMD
-	chmod +x install.sh
-
-### Advanced install. 
-Ensure that all dependencies are installed. The list of dependencies can be seen in install.sh
-Copy all files to **/opt/LIMA** navigate to **build** and run **cmake ..**
+The public distribution of the LIMA binary 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-## LIMA would not be possible without scientific contributions of many researchers. Citations for resources below:
+### LIMA would not be possible without scientific contributions of many researchers. Citations for resources below:
 
 ### LIPIDS
 Lipid files supplied by Stockholm Lipids:
